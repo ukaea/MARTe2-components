@@ -1,3 +1,12 @@
+# Building on RPI4 Debian 12 Bookworm with gpp version >=12.2.0
+
+Please first see the README.md of the MARTe2-pg repo which explains the Debian 12 Bookworm build steps needed.
+
+Please use the same terminal shell instance as was used for MARTe2, or redo the 'source check_gpp_version.sh' in MARTe2.
+If you don't understand why, please study the MARTe2 repo first!
+
+Apart from the above, note this MARTe2-components repo contains a minor fix to a makefile for UDP.
+
 # MARTe2-components
 
 The MARTe2-components repository offers a set of components that are deemed useful to the community. 
