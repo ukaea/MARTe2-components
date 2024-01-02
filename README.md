@@ -6,6 +6,9 @@ Please use the same terminal shell instance as was used for MARTe2, or redo the 
 If you don't understand why, please study the MARTe2 repo first!
 
 Apart from the above, note this MARTe2-components repo contains a minor fix to a makefile for UDP.
+There are three syntax errors in the 'Profinet' build at the start of the make which do not stop the build.
+The "Makefile.cov" files also throw warnings but do not stop the build.
+
 
 # MARTe2-components
 
