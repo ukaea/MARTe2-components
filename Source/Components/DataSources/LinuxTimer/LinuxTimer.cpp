@@ -84,6 +84,7 @@ LinuxTimer::LinuxTimer() :
     phase = 0u;
     phaseBackup = phase;
     trigRephase = 0u;
+    resyncPhase = false;
 
     if (!synchSem.Create()) {
         REPORT_ERROR(ErrorManagement::FatalError, "Could not create EventSem.");
@@ -197,6 +198,7 @@ bool LinuxTimer::Initialise(StructuredDataI &data) {
                 }
 
                 if (ok) {
+                    executor.SetPriorityClass(Threads::RealTimePriorityClass);
                     executor.SetCPUMask(cpuMask);
                     executor.SetStackSize(stackSize);
                 }
@@ -492,8 +494,8 @@ bool LinuxTimer::PrepareNextState(const char8 *const currentStateName,
         if (notConsumedNow) {
             counterAndTimer[0] = 0u;
             counterAndTimer[1] = 0u;
-
-            startTimeTicks = 0u;
+            resyncPhase = true;
+            //startTimeTicks = 0u;
             phase = phaseBackup;
         }
         if (!notConsumedLater) {
@@ -563,7 +565,8 @@ ErrorManagement::ErrorType LinuxTimer::Execute(ExecutionInfo &info) {
         phase = static_cast<uint32>(absoluteTime_1 % USEC_IN_SEC);
     }
 
-    if (startTimeTicks == 0u) {
+    if (resyncPhase) {
+        resyncPhase = false;
         float64 seconds0 = static_cast<float64>(cycleEndTicks);
         seconds0 *= timeProvider->Period();
         float64 absoluteTime_1f = seconds0 * static_cast<float64>(USEC_IN_SEC);

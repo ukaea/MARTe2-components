@@ -322,6 +322,12 @@ bool FileWriter::Initialise(StructuredDataI& data) {
         }
     }
     if (ok) {
+        if ((!overwrite) && (fileFormat == FILE_FORMAT_BINARY)) {
+            ok = false;
+            REPORT_ERROR(ErrorManagement::ParametersError, "A binary file cannot be appended. Change overwrite to 'yes' or file type to CSV.");
+        }
+    }
+    if (ok) {
         if (!data.Read("RefreshContent", refreshContent)) {
             refreshContent = 0u;
             fullNotation = 0u;
@@ -340,6 +346,10 @@ bool FileWriter::Initialise(StructuredDataI& data) {
         ok = data.MoveRelative("Signals");
         if (!ok) {
             REPORT_ERROR(ErrorManagement::ParametersError, "Could not move to the Signals section");
+        }
+        if (ok)
+        {
+            ok = data.Copy(originalSignalInformation);
         }
         if (ok) {
             //Do not allow to add signals in run-time
@@ -456,12 +466,23 @@ bool FileWriter::SetConfiguredDatabase(StructuredDataI& data) {
             }
             uint8 nDimensions = 0u;
             uint32 nElements = 0u;
+            StreamString format;
             if (ok) {
                 ok = GetSignalNumberOfDimensions(n, nDimensions);
             }
             if (ok) {
                 ok = GetSignalNumberOfElements(n, nElements);
             }
+            if(ok) {
+                ok = originalSignalInformation.MoveToChild(n);
+            }
+            bool customFormat = false;
+            if(ok) {
+                // set customFormat to true if a format is specified for this signal
+                customFormat = originalSignalInformation.Read("Format", format);
+                ok = originalSignalInformation.MoveToAncestor(1u);
+            }
+
             /*lint -e{613} signalsAnyType, dataSourceMemory and offsets cannot be null as otherwise ok would be false*/
             if (ok) {
                 char8 *memPtr = &dataSourceMemory[offsets[n]];
@@ -472,22 +493,39 @@ bool FileWriter::SetConfiguredDatabase(StructuredDataI& data) {
             }
 
             TypeDescriptor signalType = GetSignalType(n);
-            bool isUnsignedInteger = (signalType.type == UnsignedInteger);
-            bool isSignedInteger = (signalType.type == SignedInteger);
-            bool isFloat = (signalType.type == Float);
-            if (ok) {
-                if (isUnsignedInteger) {
-                    ok = csvPrintfFormat.Printf("%s", "%u");
-                }
-                else if (isSignedInteger) {
-                    ok = csvPrintfFormat.Printf("%s", "%d");
-                }
-                else if (isFloat) {
-                    ok = csvPrintfFormat.Printf("%s", "%f");
+            if (customFormat) {
+                // Initialize a FormatDescriptor object to check that the parameter is a legal type descriptor
+                FormatDescriptor fd;
+                const char8* format_str = format.Buffer();
+                ok = fd.InitialiseFromString(format_str);
+                if (ok) {
+                    ok = csvPrintfFormat.Printf("%s%s", "%", format.Buffer());
                 }
                 else {
                     ok = false;
-                    REPORT_ERROR(ErrorManagement::ParametersError, "Unsupported signal type.");
+                    StreamString signalName;
+                    (void)GetSignalName(n, signalName);
+                    REPORT_ERROR(ErrorManagement::ParametersError, "Unsupported format specifier \"%s\" for signal %s", format.Buffer(), signalName.Buffer());
+                }
+            }
+            else {
+                bool isUnsignedInteger = (signalType.type == UnsignedInteger);
+                bool isSignedInteger = (signalType.type == SignedInteger);
+                bool isFloat = (signalType.type == Float);
+                if (ok) {
+                    if (isUnsignedInteger) {
+                        ok = csvPrintfFormat.Printf("%s", "%u");
+                    }
+                    else if (isSignedInteger) {
+                        ok = csvPrintfFormat.Printf("%s", "%d");
+                    }
+                    else if (isFloat) {
+                        ok = csvPrintfFormat.Printf("%s", "%f");
+                    }
+                    else {
+                        ok = false;
+                        REPORT_ERROR(ErrorManagement::ParametersError, "Unsupported signal type.");
+                    }
                 }
             }
         }
@@ -497,8 +535,10 @@ bool FileWriter::SetConfiguredDatabase(StructuredDataI& data) {
         }
     }
 
-    if (filename.Size() > 0u) {
-        ok = OpenFile(filename.Buffer());
+    if (ok){
+        if (filename.Size() > 0u) {
+            ok = OpenFile(filename.Buffer());
+        }
     }
 
     return ok;
@@ -506,16 +546,16 @@ bool FileWriter::SetConfiguredDatabase(StructuredDataI& data) {
 
 ErrorManagement::ErrorType FileWriter::OpenFile(StreamString filenameIn) {
     filename = filenameIn;
+    bool fileAlreadyExists = false;
     REPORT_ERROR(ErrorManagement::Information, "Going to open file with name %s", filename.Buffer());
+
     if (!overwrite) {
-        //File already exists!
-        fatalFileError = outputFile.Open(filename.Buffer(), (BasicFile::ACCESS_MODE_R));
-        if (fatalFileError) {
-            (void) outputFile.Close();
-            REPORT_ERROR(ErrorManagement::FatalError, "File %s already exists and Overwrite=no", filenameIn.Buffer());
+        fileAlreadyExists = outputFile.Open(filename.Buffer(), (BasicFile::ACCESS_MODE_W | BasicFile::FLAG_APPEND));
+        if (!fileAlreadyExists) {
+            fatalFileError = !outputFile.Open(filename.Buffer(), (BasicFile::ACCESS_MODE_W | BasicFile::FLAG_APPEND | BasicFile::FLAG_CREAT));
         }
     }
-    if (!fatalFileError) {
+    else {
         Directory fileToDelete(filename.Buffer());
         (void) fileToDelete.Delete();
         fatalFileError = !outputFile.Open(filename.Buffer(), (BasicFile::ACCESS_MODE_W | BasicFile::FLAG_CREAT));
@@ -525,77 +565,79 @@ ErrorManagement::ErrorType FileWriter::OpenFile(StreamString filenameIn) {
         uint32 n;
         uint32 nOfSignals = GetNumberOfSignals();
         //Write the header
-        if (fileFormat == FILE_FORMAT_CSV) {
-            for (n = 0u; (n < nOfSignals) && (!fatalFileError); n++) {
-                if (n == 0u) {
-                    fatalFileError = !outputFile.Printf("%s", "#");
-                }
-                else {
-                    fatalFileError = !outputFile.Printf("%s", csvSeparator.Buffer());
-                }
-                StreamString signalName;
-                TypeDescriptor signalType = GetSignalType(n);
-                uint32 nOfElements;
-                if (!fatalFileError) {
-                    fatalFileError = !GetSignalName(n, signalName);
-                }
-                if (!fatalFileError) {
-                    fatalFileError = !GetSignalNumberOfElements(n, nOfElements);
-                }
-                if (!fatalFileError) {
-                    fatalFileError = !outputFile.Printf("%s (%s)[%u]", signalName.Buffer(), TypeDescriptor::GetTypeNameFromTypeDescriptor(signalType),
-                                                        nOfElements);
-                }
-            }
-            if (!fatalFileError) {
-                fatalFileError = !outputFile.Printf("%s", "\n");
-            }
-        }
-        else {
-            uint32 writeSize = static_cast<uint32>(sizeof(uint32));
-            if (!fatalFileError) {
-                //Write the number of signals
-                /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
-                fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&nOfSignals), writeSize);
-            }
-            for (n = 0u; (n < nOfSignals) && (!fatalFileError); n++) {
-                //Write the signal type
-                writeSize = static_cast<uint32>(sizeof(uint16));
-                uint16 signalType = GetSignalType(n).all;
-                if (!fatalFileError) {
-                    /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
-                    fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&signalType), writeSize);
-                }
-                StreamString signalName;
-                uint32 nOfElements = 0u;
-                if (!fatalFileError) {
-                    fatalFileError = !GetSignalName(n, signalName);
-                }
-                if (!fatalFileError) {
-                    fatalFileError = !GetSignalNumberOfElements(n, nOfElements);
-                }
-                if (!fatalFileError) {
-                    //Write the signal name
-                    const uint32 SIGNAL_NAME_MAX_SIZE = 32u;
-                    char8 signalNameMemory[SIGNAL_NAME_MAX_SIZE];
-                    fatalFileError = !MemoryOperationsHelper::Set(&signalNameMemory[0], '\0', SIGNAL_NAME_MAX_SIZE);
+        if (!fileAlreadyExists) {
+            if (fileFormat == FILE_FORMAT_CSV) {
+                for (n = 0u; (n < nOfSignals) && (!fatalFileError); n++) {
+                    if (n == 0u) {
+                        fatalFileError = !outputFile.Printf("%s", "#");
+                    }
+                    else {
+                        fatalFileError = !outputFile.Printf("%s", csvSeparator.Buffer());
+                    }
+                    StreamString signalName;
+                    TypeDescriptor signalType = GetSignalType(n);
+                    uint32 nOfElements;
                     if (!fatalFileError) {
-                        uint32 copySize = static_cast<uint32>(signalName.Size());
-                        if (copySize > SIGNAL_NAME_MAX_SIZE) {
-                            copySize = SIGNAL_NAME_MAX_SIZE;
+                        fatalFileError = !GetSignalName(n, signalName);
+                    }
+                    if (!fatalFileError) {
+                        fatalFileError = !GetSignalNumberOfElements(n, nOfElements);
+                    }
+                    if (!fatalFileError) {
+                        fatalFileError = !outputFile.Printf("%s (%s)[%u]", signalName.Buffer(), TypeDescriptor::GetTypeNameFromTypeDescriptor(signalType),
+                                          nOfElements);
+                    }
+                }
+                if (!fatalFileError) {
+                    fatalFileError = !outputFile.Printf("%s", "\n");
+                }
+            }
+            else {
+                uint32 writeSize = static_cast<uint32>(sizeof(uint32));
+                if (!fatalFileError) {
+                    //Write the number of signals
+                    /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
+                    fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&nOfSignals), writeSize);
+                }
+                for (n = 0u; (n < nOfSignals) && (!fatalFileError); n++) {
+                    //Write the signal type
+                    writeSize = static_cast<uint32>(sizeof(uint16));
+                    uint16 signalType = GetSignalType(n).all;
+                    if (!fatalFileError) {
+                        /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
+                        fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&signalType), writeSize);
+                    }
+                    StreamString signalName;
+                    uint32 nOfElements = 0u;
+                    if (!fatalFileError) {
+                        fatalFileError = !GetSignalName(n, signalName);
+                    }
+                    if (!fatalFileError) {
+                        fatalFileError = !GetSignalNumberOfElements(n, nOfElements);
+                    }
+                    if (!fatalFileError) {
+                        //Write the signal name
+                        const uint32 SIGNAL_NAME_MAX_SIZE = 32u;
+                        char8 signalNameMemory[SIGNAL_NAME_MAX_SIZE];
+                        fatalFileError = !MemoryOperationsHelper::Set(&signalNameMemory[0], '\0', SIGNAL_NAME_MAX_SIZE);
+                        if (!fatalFileError) {
+                            uint32 copySize = static_cast<uint32>(signalName.Size());
+                            if (copySize > SIGNAL_NAME_MAX_SIZE) {
+                                copySize = SIGNAL_NAME_MAX_SIZE;
+                            }
+                            fatalFileError = !MemoryOperationsHelper::Copy(&signalNameMemory[0], signalName.Buffer(), copySize);
                         }
-                        fatalFileError = !MemoryOperationsHelper::Copy(&signalNameMemory[0], signalName.Buffer(), copySize);
+                        if (!fatalFileError) {
+                            writeSize = SIGNAL_NAME_MAX_SIZE;
+                            fatalFileError = !outputFile.Write(&signalNameMemory[0], writeSize);
+                        }
                     }
                     if (!fatalFileError) {
-                        writeSize = SIGNAL_NAME_MAX_SIZE;
-                        fatalFileError = !outputFile.Write(&signalNameMemory[0], writeSize);
+                        //Write the signal number of elements
+                        writeSize = static_cast<uint32>(sizeof(uint32));
+                        /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
+                        fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&nOfElements), writeSize);
                     }
-                }
-                if (!fatalFileError) {
-                    //Write the signal number of elements
-                    writeSize = static_cast<uint32>(sizeof(uint32));
-                    /*lint -e{928}  [MISRA C++ Rule 5-2-7]. Justification: Need to cast to the type expected by the Write function.*/
-                    fatalFileError = !outputFile.Write(reinterpret_cast<const char8 *>(&nOfElements), writeSize);
                 }
             }
         }

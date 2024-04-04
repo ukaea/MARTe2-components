@@ -82,14 +82,8 @@ public:
     virtual ~IOGAM();
 
     /**
-     * @brief Verifies correctness of the GAM configuration.
-     * @details Checks that the number of input signals is equal to the number of output signals and that,
-     * for each signal, the same type is used.
-     * @return is the pre-conditions are met.
-     * @pre
-     *   SetConfiguredDatabase() &&
-     *   GetNumberOfInputSignals() == GetNumberOfOutputSignals() &&
-     *   for each signal i: GetSignalByteSize(InputSignals, i) * GetSignalNumberOfSamples(InputSignals, i) == GetSignalByteSize(OutputSignals, i) * GetSignalNumberOfSamples(OutputSignals, i)
+     * @brief Checks that the total input signal memory size is equal to the total output signal memory size.
+     * @return true is the pre-conditions are met.
      */
     virtual bool Setup();
 

@@ -54,11 +54,24 @@ endif
 endif
 
 ifdef CODAC_ROOT
+## Only force CCSHelpers if CCS version is gt v6.3
+CCSGT63 = $(shell if [ `codac-version -v | sed 's/\(.*\)\.\(.*\)/\1\2/g'` -ge 63 ]; then echo 1; else echo 0; fi)
+ifeq "$(CCSGT63)" "1"
+SPB+=CCSHelpers.x
+endif
+endif
+
+
+ifdef CODAC_ROOT
 SPB+=TcnTimeProvider.x
 endif
 
 ifdef EPICSPVA
 SPB+=EPICSPVA.x
+endif
+
+ifdef EPICS_PCAS
+SPB+=MARTeIOC.x
 endif
 
 PACKAGE=Components

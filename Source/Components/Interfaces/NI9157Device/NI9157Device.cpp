@@ -49,6 +49,7 @@ NI9157Device::NI9157Device() :
         ReferenceContainer(), MessageI() {
     isOpened = 0u;
     reset = 0u;
+    resetPostSleepMs = 0u;
     isRunning = 0u;
     run = 0u;
     status = 0;
@@ -75,11 +76,37 @@ NI9157Device::~NI9157Device() {
 }
 
 bool NI9157Device::Initialise(StructuredDataI & data) {
-    bool ret = ReferenceContainer::Initialise(data);
+
+    uint8 clear = static_cast<uint8>(0u);
+    bool ret    = ReferenceContainer::Initialise(data);
+
     if (ret) {
         ret = data.Read("NiRioDeviceName", niRioDeviceName);
         if (!ret) {
-            REPORT_ERROR(ErrorManagement::InitialisationError, "NI9157Device::Initialise Please specify the NI-RIO Device name (NiRioDeviceName)");
+            ret = data.Read("NiRioSerialNumber", niRioSerialNumber);
+            if (ret) {
+                bool found = false;
+                uint32 devN = 0u;
+                while ((!found) && (ret)) {
+                    StreamString candidateDev;
+                    (void) candidateDev.Printf("RIO%d", devN);
+                    char8 serialNumber[128u] = { '\0' };
+                    uint32 size = 128u;
+                    status = NiFpgaEx_GetAttributeString(candidateDev.Buffer(), NiFpgaEx_AttributeString_SerialNumber, &serialNumber[0u], static_cast<size_t>(size));
+                    ret = (status == 0);
+                    if (ret) {
+                        niRioDeviceName = candidateDev;
+                        found = (niRioSerialNumber == reinterpret_cast<char8 *>(&serialNumber[0u]));
+                    }
+                    else {
+                        REPORT_ERROR(ErrorManagement::InitialisationError, "NI9157Device::Initialise Device with SN = %s not found", niRioSerialNumber.Buffer());
+                    }
+                    devN++;
+                }
+            }
+            else {
+                REPORT_ERROR(ErrorManagement::InitialisationError, "NI9157Device::Initialise Please specify NiRioDeviceName or NiRioSerialNumber");
+            }
         }
         if (ret) {
             ret = data.Read("NiRioGenFile", niRioGenFile);
@@ -90,7 +117,7 @@ bool NI9157Device::Initialise(StructuredDataI & data) {
         if (ret) {
             ret = data.Read("NiRioGenSignature", niRioGenSignature);
             if (!ret) {
-                REPORT_ERROR(ErrorManagement::InitialisationError, "NI9157Device::Initialise Please spacify the NI-RIO generated signature (NiRioGenSignature)");
+                REPORT_ERROR(ErrorManagement::InitialisationError, "NI9157Device::Initialise Please specify the NI-RIO generated signature (NiRioGenSignature)");
             }
         }
         if (ret) {
@@ -104,8 +131,18 @@ bool NI9157Device::Initialise(StructuredDataI & data) {
             }
         }
         if (ret) {
+            if (!data.Read("ResetPostSleepMs", resetPostSleepMs)) {
+                resetPostSleepMs = 0u;
+            }
+        }
+        if (ret) {
             if (!data.Read("Run", run)) {
                 run = 0u;
+            }
+        }
+        if (ret) {
+            if (!data.Read("Clear", clear)) {
+                clear = static_cast<uint8>(0u);
             }
         }
     }
@@ -115,6 +152,14 @@ bool NI9157Device::Initialise(StructuredDataI & data) {
             uint32 cnt = 0u;
             while (condition) {
                 if (isOpened == 1u) {
+                    if (clear == 1u) {
+                        REPORT_ERROR_PARAMETERS(ErrorManagement::Information, "NI9157Device::Initialise - Calling clear fpga method on device %s.", niRioDeviceName.Buffer());
+                        status = NiFpgaEx_ClearFpga(niRioDeviceName.Buffer());
+                        REPORT_ERROR_PARAMETERS((status == 0) ? ErrorManagement::Information : ErrorManagement::Warning,
+                            "NI9157Device::Initialise - Clear fpga method on device %s returning with status %d.", niRioDeviceName.Buffer(), static_cast<int32>(status));
+                        status = 0;
+                        Sleep::MSec(100u);
+                    }
                     REPORT_ERROR_PARAMETERS(ErrorManagement::Information, "NI9157Device::Initialise Opening %s %s %s", niRioDeviceName.Buffer(), niRioGenSignature.Buffer(),
                                             niRioGenFile.Buffer());
                     /*lint -e{930} allow conversion from enum to int*/
@@ -128,7 +173,13 @@ bool NI9157Device::Initialise(StructuredDataI & data) {
                         if (reset == 1u) {
                             status = NiFpga_Reset(session);
                             ret = (status == 0);
-                            REPORT_ERROR_PARAMETERS(ErrorManagement::FatalError, "NI9157Device::Initialise Reset() with status=%d", static_cast<int32> (status));
+                            REPORT_ERROR_PARAMETERS(ret ? ErrorManagement::Information : ErrorManagement::FatalError, "NI9157Device::Initialise Reset() with status=%d", static_cast<int32> (status));
+                            if (ret) {
+                                if (resetPostSleepMs != 0u) {
+                                    REPORT_ERROR_PARAMETERS(ErrorManagement::Information, "NI9157Device::Initialise - Sleeping for %u ms after NiFpga_Reset().", resetPostSleepMs);
+                                    Sleep::MSec(resetPostSleepMs);
+                                }
+                            }
                             if (ret) {
                                 isRunning = 0u;
                             }

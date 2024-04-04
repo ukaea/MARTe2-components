@@ -107,6 +107,11 @@ public:
     bool TestInitialise_Binary();
 
     /**
+     * @brief Tests the Initialise method setting overwrite to 'no' and file format to binary.
+     */
+    bool TestInitialise_False_Binary_No_Overwrite();
+
+    /**
      * @brief Tests the Initialise method without specifying the overwrite parameter.
      */
     bool TestInitialise_False_Overwrite();
@@ -202,14 +207,24 @@ public:
     bool TestSetConfiguredDatabase_False_TimeSignal_MoreThanOneFunction();
 
     /**
+     * @brief Tests that the application initialises successfully when a legal format specifier is set for a signal
+     */
+    bool TestSetConfiguredDatabase_NumberFormat();
+
+    /**
+     * @brief Tests that the application fails to initialise when an illegal format specifier is set for a signal
+     */
+    bool TestSetConfiguredDatabase_False_WrongNumberFormat();
+
+    /**
+     * @brief Tests that the application fails to initialise when an empty string is given as format specifier for a signal
+     */
+    bool TestSetConfiguredDatabase_False_EmptyNumberFormat();
+    
+    /**
      * @brief Tests the OpenFile method.
      */
     bool TestOpenFile();
-
-    /**
-     * @brief Tests that the OpenFile does not overwrite.
-     */
-    bool TestOpenFile_Overwrite();
 
     /**
      * @brief Tests the CloseFile method.
@@ -240,6 +255,11 @@ public:
      * @brief Tests the FileWriter integrated in an application which asynchronously stores data based on a trigger event.
      */
     bool TestIntegratedInApplication_Trigger(const MARTe::char8 *filename, bool csv = true);
+
+    /**
+     * @brief Tests that a signal value is formatted accordingly to the "Format" parameter 
+     */
+    bool TestIntegratedInApplication_NumberFormat();
 
     /**
      * @brief Tests the GetCPUMask method.
@@ -340,6 +360,11 @@ public:
      * @brief Tests that an Invalid message type is correctly captured.
      */
     bool TestInvalidMessageType();
+
+    /**
+     * @brief Tests that new data is saved into an existing csv file by setting overwrite to no.
+     */
+    bool TestNoOverwrite_CSV();
 
 };
 
