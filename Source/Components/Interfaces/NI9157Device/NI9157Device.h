@@ -54,6 +54,7 @@ namespace MARTe {
  * +NiDevice = {
  *     Class = NI9157Device
  *     NiRioDeviceName = RIO0
+ *     NiRioSerialNumber = "0x01E4B4D5" // if NiRioDeviceNumber not defined, it will search the device from the SN
  *     NiRioGenFile = "/path/to/the/NiRio/Gen/file/NiFpga_firmware.lvbitx"
  *     NiRioGenSignature = "CCF43684FE70CCDB4E23B1D2DF50940C"
  *     Open = 1 // specifies if the device must be opened or not. If 0, the Configuration block has no meaning.
@@ -62,6 +63,9 @@ namespace MARTe {
  *              // Run = 0 is assumed if this parameter is not set.
  *     Run = 0  // specifies if the device should be set into run mode after being opened.
  *              // Run = 0 is assumed if this parameter is not set.
+ *     Clear = 0  // calls clear on the FPGA to ensure that nothing is running before a new firmware is loaded and /or a new application is started.
+ *     ResetPostSleepMs = 120   // (optional, default is zero) specifies the amount of time in milliseconds to wait after the initial reset call().
+ *                              // This method is intended for cards (i.e. NI9401) where the NI reset method afects output readiness.
  *     Configuration = {
  *         ConfigureBool_stop = 0
  *         ConfigureBool_use_dsfifo_data = 0
@@ -817,6 +821,11 @@ protected:
     uint8 reset;
 
     /**
+     * Specifies the number of miliseconds to sleep after the NI-9157 is reseted.
+     */
+    uint32 resetPostSleepMs;
+
+    /**
      * Holds the path to the LabVIEW generated header file.
      */
     StreamString niRioGenFile;
@@ -831,6 +840,10 @@ protected:
      */
     StreamString niRioDeviceName;
 
+    /**
+     * Holds the Ni-9157 serial number.
+     */
+    StreamString niRioSerialNumber;
 };
 
 }

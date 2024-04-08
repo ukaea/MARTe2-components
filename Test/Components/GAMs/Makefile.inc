@@ -30,6 +30,7 @@ SPB=  IOGAM.x\
     CRCGAM.x\
     DoubleHandshakeGAM.x\
     FilterGAM.x\
+    FlattenedStructIOGAM.x\
     HistogramGAM.x\
     Interleaved2FlatGAM.x\
     MathExpressionGAM.x\
@@ -39,6 +40,7 @@ SPB=  IOGAM.x\
     SSMGAM.x\
     StatisticsGAM.x\
     TimeCorrectionGAM.x\
+    TriggeredIOGAM.x\
     WaveformGAM.x
 
 ifdef EFDA_MARTe_DIR

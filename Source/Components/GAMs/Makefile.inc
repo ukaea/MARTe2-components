@@ -28,17 +28,19 @@ SPB=IOGAM.x\
 	ConstantGAM.x\
 	ConversionGAM.x\
 	CRCGAM.x\
-    DoubleHandshakeGAM.x\
+	DoubleHandshakeGAM.x\
 	FilterGAM.x\
+	FlattenedStructIOGAM.x\
 	HistogramGAM.x\
 	Interleaved2FlatGAM.x\
 	MathExpressionGAM.x\
-    MessageGAM.x\
+	MessageGAM.x\
 	MuxGAM.x\
 	PIDGAM.x\
 	SSMGAM.x\
 	StatisticsGAM.x\
 	TimeCorrectionGAM.x\
+	TriggeredIOGAM.x\
 	WaveformGAM.x
 
 ifdef EFDA_MARTe_DIR

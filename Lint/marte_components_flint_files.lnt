@@ -50,6 +50,7 @@
 -i./Source/Components/DataSources/RealTimeThreadSynchronisation/
 -i./Source/Components/DataSources/SDN/
 -i./Source/Components/DataSources/ProfinetDataSource/
+-i./Source/Components/DataSources/UARTDataSource/
 -i./Source/Components/DataSources/UDP/
 -i./Source/Components/GAMs/BaseLib2GAM/
 -i./Source/Components/GAMs/ConstantGAM/
@@ -57,6 +58,7 @@
 -i./Source/Components/GAMs/CRCGAM/
 -i./Source/Components/GAMs/DoubleHandshakeGAM/
 -i./Source/Components/GAMs/FilterGAM/
+-i./Source/Components/GAMs/FlattenedStructIOGAM/
 -i./Source/Components/GAMs/HistogramGAM/
 -i./Source/Components/GAMs/Interleaved2FlatGAM/
 -i./Source/Components/GAMs/IOGAM/
@@ -69,6 +71,7 @@
 -i./Source/Components/GAMs/SimulinkWrapperGAM/
 -i./Source/Components/GAMs/StatisticsGAM/
 -i./Source/Components/GAMs/TimeCorrectionGAM/
+-i./Source/Components/GAMs/TriggeredIOGAM/
 -i./Source/Components/Interfaces/BaseLib2Wrapper/
 -i./Source/Components/Interfaces/EPICS/
 -i./Source/Components/Interfaces/EPICSPVA/
@@ -119,7 +122,9 @@ EventConditionTrigger.cpp
 FileReader.cpp
 FileWriter.cpp
 FilterGAM.cpp
+FlattenedStructIOGAM.cpp
 HighResolutionTimeProvider.cpp
+HighResolutionTimestampProvider.cpp
 HistogramComparator.cpp
 HistogramComparatorT.h
 HistogramGAM.cpp
@@ -182,6 +187,8 @@ SysLogger.cpp
 TcnTimeProvider.cpp
 TimeCorrectionGAM.cpp
 TimeProvider.cpp
+TimestampProvider.cpp
+TriggeredIOGAM.cpp
 Types.h
 UDPSender.cpp
 UDPReceiver.cpp
@@ -193,3 +200,6 @@ WaveformSin.cpp
 WaveformSin.h
 WaveformPointsDef.cpp
 WaveformPointsDef.h
+UARTDataSource.cpp
+UARTDataSource.h
+

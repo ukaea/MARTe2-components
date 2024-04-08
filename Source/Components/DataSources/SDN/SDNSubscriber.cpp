@@ -83,6 +83,7 @@ SDNSubscriber::SDNSubscriber() :
     payloadAddresses = NULL_PTR(void **);
     internalTimeout = 0u;
     ignoreTimeoutError = 0u;
+    socketBufferCapacity = 0u;
 }
 
 /*lint -e{1551} the destructor must guarantee that the SDNSubscriber SingleThreadService is stopped and that all the SDN objects are destroyed.*/
@@ -174,6 +175,10 @@ bool SDNSubscriber::Initialise(StructuredDataI &data) {
     if (data.Read("Timeout", timeout)) {
         REPORT_ERROR(ErrorManagement::Information, "Explicit subscriber timeout '%u'", timeout);
         TTTimeout = timeout;
+    }
+
+    if(!data.Read("SocketBufferCapacity", socketBufferCapacity)){
+        socketBufferCapacity=0u;
     }
 
     if (!data.Read("InternalTimeout", internalTimeout)) {
@@ -331,6 +336,20 @@ bool SDNSubscriber::AllocateMemory() {
         ok = (subscriber->SetInterface(ifaceName.Buffer()) == STATUS_SUCCESS);
     }
 
+    if(ok){
+        if(socketBufferCapacity > 0u){
+//After 6.0.0
+#ifndef LINT
+#if UNIT_VERSION > UNIT_VERSION_UID(1,2,2)
+            ok = (subscriber->SetBufferDepth(socketBufferCapacity*topic->GetSize()) == STATUS_SUCCESS);
+#else
+            REPORT_ERROR(ErrorManagement::Warning, "SetBufferDepth not supported in this version of CCS");
+#endif
+#endif
+        }
+    }
+
+
     if (ok) {
         /*lint -e{613} The reference can not be NULL in this portion of the code.*/
         ok = (subscriber->Configure() == STATUS_SUCCESS);
@@ -452,9 +471,17 @@ bool SDNSubscriber::GetInputBrokers(ReferenceContainer& inputBrokers,
     uint32 functionIdx = 0u;
     uint32 nOfFunctionSignals = 0u;
     uint32 signalIndex;
+    //See https://vcis-redmine.f4e.europa.eu/issues/885 - if the executionMode is RealTimeThread force MemoryMapSynchronisedInputBroker
     bool synchGAM = false;
-    bool ok = GetFunctionIndex(functionIdx, functionName);
-
+   
+    bool ok = true;
+    if (!synchronising) {
+        ok = (executionMode != SDN_SUB_EXEC_MODE_RTTHREAD);
+        REPORT_ERROR(ErrorManagement::ParametersError, "With ExecutionMode == RealTimeThread => at least one Function shall have Trigger=1 or Frequency > 0");
+    }
+    if (ok) {
+        ok = GetFunctionIndex(functionIdx, functionName);
+    }
     if (ok) {
         ok = GetFunctionNumberOfSignals(InputSignals, functionIdx, nOfFunctionSignals);
     }
@@ -604,7 +631,8 @@ bool SDNSubscriber::PrepareNextState(const char8* const currentStateName,
                if (executionMode == SDN_SUB_EXEC_MODE_SPAWNED) {
                    if (executor.GetStatus() == EmbeddedThreadI::OffState) {
                        if (cpuMask != 0ull) {
-                           executor.SetCPUMask(BitSet(cpuMask));
+                            executor.SetPriorityClass(Threads::RealTimePriorityClass);
+                            executor.SetCPUMask(BitSet(cpuMask));
                        }
                        // Start the SingleThreadService
                        ok = executor.Start();

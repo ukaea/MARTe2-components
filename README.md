@@ -1,3 +1,15 @@
+# Building on RPI4 Debian 12 Bookworm with gpp version >=12.2.0
+
+Please first see the README.md of the MARTe2-pg repo which explains the Debian 12 Bookworm build steps needed.
+
+Please use the same terminal shell instance as was used for MARTe2, or redo the 'source check_gpp_version.sh' in MARTe2.
+If you don't understand why, please study the MARTe2 repo first!
+
+Apart from the above, note this MARTe2-components repo contains a minor fix to a makefile for UDP.
+There are three syntax errors in the 'Profinet' build at the start of the make which do not stop the build.
+The "Makefile.cov" files also throw warnings but do not stop the build.
+
+
 # MARTe2-components
 
 The MARTe2-components repository offers a set of components that are deemed useful to the community. 
@@ -16,6 +28,7 @@ These include general purpose GAMs, support to off-the-shelf hardware and interf
 | [HistogramGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/HistogramGAM) | [Compute histograms from the input signal values.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1HistogramGAM.html)|
 | [Interleaved2FlatGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/Interleaved2FlatGAM) | [Allows to translate an interleaved memory region into a flat memory area (and vice-versa)..](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1Interleaved2FlatGAM.html)|
 | [IOGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/IOGAM) | [GAM which copies its inputs to its outputs. Allows to plug different DataSources (e.g. driver with a DDB).](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1IOGAM.html)|
+| [FlattenedStructIOGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/FlattenedStructIOGAM) | [An IOGAM that flattens (and copies) an input signal with arrays of structures into arrays of basic types.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1FlattenedStructIOGAM.html)|
 | [MathExpressionGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/MathExpressionGAM) | [GAM that allows to compute math expressions in real-time.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1MathExpressionGAM.html)|
 | [MessageGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/MessageGAM) | [Triggers MARTe::Message events on the basis of commands received in the input signals.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1MessageGAM.html)|
 | [MuxGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/MuxGAM) | [Multiplexer GAM that allows multiplex different signals.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1MuxGAM.html)|
@@ -24,6 +37,7 @@ These include general purpose GAMs, support to off-the-shelf hardware and interf
 | [SSMGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/SSMGAM) | [A generic State Space model with constant matrices and float64.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1SSMGAM.html)|
 | [StatisticsGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/StatisticsGAM) | [GAM which provides average, standard deviation, minimum and maximum of its input signal over a moving time window.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1StatisticsGAM.html)|
 | [TimeCorrectionGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/TimeCorrectionGAM) | [GAM which allows to estimate the next time-stamp value in a continuous time stream.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1TimeCorrectionGAM.html)|
+| [TriggeredIOGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/TriggeredIOGAM) | [An IOGAM whose copy is conditional to the value of a Trigger signal.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1TriggeredIOGAM.html)|
 | [WaveformGAM](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/GAMs/WaveformGAM) | [GAM which provides average, standard deviation, minimum and maximum of its input signal over a moving time window.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1Waveform.html)|
 
 ## DataSources
@@ -57,6 +71,9 @@ These include general purpose GAMs, support to off-the-shelf hardware and interf
 | [RealTimeThreadSynchronisation](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/RealTimeThreadSynchronisation) | [Enables the synchronisation of multiple real-time threads.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1RealTimeThreadSynchronisation.html)|
 | [SDNSubscriber](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/SDN) | [Receive signals transported over the ITER SDN.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1SDNSubscriber.html)|
 | [SDNPublisher](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/SDN) | [Publish signals transported over the ITER SDN.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1SDNPublisher.html)|
+| [UARTDataSource](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/UARTDataSource) | [Receive signals transported over UART.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1UARTDataSource.html)|
+| [UDPReceiver](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/UDP) | [Receive signals transported over UDP.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1UDPReceiver.html)|
+| [UDPSender](https://vcis-gitlab.f4e.europa.eu/aneto/MARTe2-components/tree/master/Source/Components/DataSources/UDP) | [Transmit signals transported over UDP.](https://vcis-jenkins.f4e.europa.eu/job/MARTe2-Components-docs-master/doxygen/classMARTe_1_1UDPSender.html)|
 
 ## Interfaces
 
